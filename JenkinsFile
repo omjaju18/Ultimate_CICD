@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+    tools{
+        jdk 'jdk21'
+        maven 'maven6'
+    }
+    
+    environment{
+        SCANNER_HOME = tool 'sonar-scanner'
+    }
+
+    stages {
+        stage('Github Checkout') {
+            steps {
+                echo 'Checking the repo'
+                git branch: 'main', url: 'https://github.com/omjaju18/Ekart.git'
+            }
+        }
+        stage('Complie') {
+            steps {
+                echo 'Compiling the code'
+                sh 'mvn clean compile'
+            }
+        }
+        stage('Sonarqube Analysis') {
+             steps {
+                echo 'Doing the analysis'
+                sh '''
+                 $SCANNER_HOME/bin/sonar-scanner \
+                -Dsonar.url=http://172.28.121.165:9000/ \
+                -Dsonar.login=squ_1bae0e9823f9f91f988e7a05c3a0bf0106be6e8c \
+                -Dsonar.projectName=shopping-cart \
+                -Dsonar.java.binaries=. \
+                -Dsonar.projectKey=shopping-cart
+            '''
+            }
+        }
+        stage('Builing an App') {
+            steps {
+                echo 'Building the app'
+                sh 'mvn clean install'
+            }
+        }
+        
+        stage('Build and Push Docker image') {
+            steps {
+                echo 'Builing the code and pushing the image'
+                script{
+                    withDockerRegistry(credentialsId: 'c709c436-bd20-444b-9182-bb71c582eda1', toolName: "docker") {
+                        sh "docker build -t shopping:latest -f docker/Dockerfile ."
+                        sh "docker tag shopping:latest omjaju18/shopping:latest"
+                        sh "docker push omjaju18/shopping:latest"
+                    }
+                    
+                }
+            }
+        }
+        stage('Trigger CD Pipeline') {
+            steps {
+                echo 'Triggering the CD Pipeline'
+                build job: "CD_Pipeline" , wait: true
+            }
+        }
+    }
+}
