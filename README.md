@@ -1,167 +1,129 @@
-# Spring Boot Shopping Cart Web App
+# CI/CD Pipeline for Ekart Application
 
-## About
+This pipeline automates the development, testing, and deployment process for the Ekart application, ensuring efficient and consistent software delivery. Below is an overview of the pipeline stages, the technologies used, and their purposes.
 
-This is a demo project for practicing Spring + Thymeleaf. The idea was to build some basic shopping cart web app.
+<img width="548" alt="image" src="https://github.com/user-attachments/assets/1018ca0e-7441-463d-991c-c2064291ee12" />
 
-It was made using **Spring Boot**, **Spring Security**, **Thymeleaf**, **Spring Data JPA**, **Spring Data REST and Docker**. 
-Database is in memory **H2**.
+---
 
-There is a login and registration functionality included.
+## **Technologies Used**
+- **Languages and Build Tools:**
+  - Java (JDK 21)
+  - Maven 6
+- **Code Quality Analysis:** SonarQube and Sonar Scanner
+- **Containerization:** Docker
+- **Source Control:** GitHub
+- **CI/CD Orchestration:** Jenkins
 
-Users can shop for products. Each user has his own shopping cart (session functionality).
-Checkout is transactional.
+## **Commands to Set Up Jenkins and SonarQube**
 
-## Configuration
+### Start SonarQube
+Run the following command to start a SonarQube instance:
 
-### Configuration Files
+docker run -d -p 9000:9000 sonarqube:lts-community
+The SonarQube server will be accessible at: http://localhost:9000.
 
-Folder **src/resources/** contains config files for **shopping-cart** Spring Boot application.
+Start Jenkins
+Run the following command to start a Jenkins instance:
 
-* **src/resources/application.properties** - main configuration file. Here it is possible to change admin username/password,
-as well as change the port number.
+docker run -d --name jenkins -p 50000:50000 -v jenkins_data:/var/jenkins_home jenkins/jenkins:lts
+Jenkins will be accessible at: http://localhost:8080.
+The jenkins_data volume ensures persistent Jenkins data.
 
-## How to run
+## **Pipeline Stages**
 
-There are several ways to run the application. You can run it from the command line with included Maven Wrapper, Maven or Docker. 
+### 1. **GitHub Checkout**
+   - **Purpose:** Clones the code repository to the Jenkins workspace for the pipeline to work with the latest codebase.
+   - **Technology Used:** Git
+   - **Key Action:**
+     - Checks out the `main` branch from the GitHub repository using the Jenkins Git plugin.
 
-Once the app starts, go to the web browser and visit `http://localhost:8070/home`
+---
 
-Admin username: **admin**
+### 2. **Compile**
+   - **Purpose:** Ensures the source code is free from syntax errors and compiles successfully.
+   - **Technology Used:** Maven
+   - **Key Action:**
+     - Executes `mvn clean compile` to clean previous builds and compile the source code.
 
-Admin password: **admin**
+---
 
-User username: **user**
+### 3. **SonarQube Analysis**
+   - **Purpose:** Performs static code analysis to ensure code quality, maintainability, and security.
+   - **Technologies Used:**
+     - SonarQube
+     - Sonar Scanner
+   - **Key Actions:**
+     - Analyzes the source code for issues like bugs, code smells, and security vulnerabilities.
+     - Configures project-specific parameters like `sonar.url`, `sonar.projectKey`, and `sonar.login`.
 
-User password: **password**
+---
 
-### Maven Wrapper
+### 4. **Build Application**
+   - **Purpose:** Packages the compiled application into an executable JAR file.
+   - **Technology Used:** Maven
+   - **Key Action:**
+     - Runs `mvn clean install` to package the application and generate the artifact.
 
-#### Using the Maven Plugin
+---
 
-Go to the root folder of the application and type:
-```bash
-$ chmod +x scripts/mvnw
-$ scripts/mvnw spring-boot:run
-```
+### 5. **Build and Push Docker Image**
+   - **Purpose:** Creates a Docker image for the application and pushes it to a Docker registry for containerized deployment.
+   - **Technologies Used:**
+     - Docker
+     - Jenkins Docker Plugin
+   - **Key Actions:**
+     - Builds the Docker image using a `Dockerfile`.
+     - Tags the image with the name `omjaju18/shopping:latest`.
+     - Pushes the tagged image to Docker Hub.
 
-#### Using Executable Jar
+---
 
-Or you can build the JAR file with 
-```bash
-$ scripts/mvnw clean package
-``` 
+### 6. **Trigger CD Pipeline**
+   - **Purpose:** Initiates the downstream Continuous Deployment (CD) pipeline for deploying the application.
+   - **Technology Used:** Jenkins
+   - **Key Action:**
+     - Triggers the `CD_Pipeline` job using the Jenkins `build` command.
 
-Then you can run the JAR file:
-```bash
-$ java -jar target/shopping-cart-0.0.1-SNAPSHOT.jar
-```
+---
 
-### Maven
+---
 
-Open a terminal and run the following commands to ensure that you have valid versions of Java and Maven installed:
+## **How to Run the Pipeline**
+1. Ensure that all required tools are installed and configured:
+   - Jenkins with necessary plugins (e.g., Git, Docker, SonarQube).
+   - Docker daemon running and accessible to Jenkins.
+   - SonarQube server properly configured.
+2. Add required credentials in Jenkins:
+   - GitHub credentials for repository access.
+   - Docker Hub credentials for pushing the image.
+   - SonarQube authentication token.
+3. Trigger the pipeline in Jenkins by selecting the job and clicking `Build Now`.
+4. Monitor the pipeline execution to ensure all stages complete successfully.
 
-```bash
-$ java -version
-java version "1.8.0_102"
-Java(TM) SE Runtime Environment (build 1.8.0_102-b14)
-Java HotSpot(TM) 64-Bit Server VM (build 25.102-b14, mixed mode)
-```
+---
+## Outputs
 
-```bash
-$ mvn -v
-Apache Maven 3.3.9 (bb52d8502b132ec0a5a3f4c09453c07478323dc5; 2015-11-10T16:41:47+00:00)
-Maven home: /usr/local/Cellar/maven/3.3.9/libexec
-Java version: 1.8.0_102, vendor: Oracle Corporation
-```
+### Jenkins: Successfully automated the pipeline execution.
 
-#### Using the Maven Plugin
+<img width="959" alt="image" src="https://github.com/user-attachments/assets/37614c11-d975-4358-bba3-eedfba3e5782" />
 
-The Spring Boot Maven plugin includes a run goal that can be used to quickly compile and run your application. 
-Applications run in an exploded form, as they do in your IDE. 
-The following example shows a typical Maven command to run a Spring Boot application:
- 
-```bash
-$ mvn spring-boot:run
-``` 
+<img width="958" alt="image" src="https://github.com/user-attachments/assets/791d114c-1671-478e-a1ba-b7379b6113ac" />
 
-#### Using Executable Jar
 
-To create an executable jar run:
+### SonarQube: Passed the code quality checks with no major issues.
 
-```bash
-$ mvn clean package
-``` 
+Url - http://localhost:9000/
 
-To run that application, use the java -jar command, as follows:
+<img width="959" alt="image" src="https://github.com/user-attachments/assets/bee6c161-ecbd-4a18-994a-4b4ce639de97" />
 
-```bash
-$ java -jar target/shopping-cart-0.0.1-SNAPSHOT.jar
-```
 
-To exit the application, press **ctrl-c**.
+### Deployment: The project was deployed successfully.
 
-### Docker
+Url - http://172.28.121.165:8070/login
 
-It is possible to run **shopping-cart** using Docker:
+<img width="959" alt="image" src="https://github.com/user-attachments/assets/226a7c12-a503-49f0-b32e-0672554c75b8" />
 
-Build Docker image:
-```bash
-$ mvn clean package
-$ docker build -t shopping-cart:dev -f docker/Dockerfile .
-```
 
-Run Docker container:
-```bash
-$ docker run --rm -i -p 8070:8070 \
-      --name shopping-cart \
-      shopping-cart:dev
-```
 
-##### Helper script
-
-It is possible to run all of the above with helper script:
-
-```bash
-$ chmod +x scripts/run_docker.sh
-$ scripts/run_docker.sh
-```
-
-## Docker 
-
-Folder **docker** contains:
-
-* **docker/shopping-cart/Dockerfile** - Docker build file for executing shopping-cart Docker image. 
-Instructions to build artifacts, copy build artifacts to docker image and then run app on proper port with proper configuration file.
-
-## Util Scripts
-
-* **scripts/run_docker.sh.sh** - util script for running shopping-cart Docker container using **docker/Dockerfile**
-
-## Tests
-
-Tests can be run by executing following command from the root of the project:
-
-```bash
-$ mvn test
-```
-
-## Helper Tools
-
-### HAL REST Browser
-
-Go to the web browser and visit `http://localhost:8070/`
-
-You will need to be authenticated to be able to see this page.
-
-### H2 Database web interface
-
-Go to the web browser and visit `http://localhost:8070/h2-console`
-
-In field **JDBC URL** put 
-```
-jdbc:h2:mem:shopping_cart_db
-```
-
-In `/src/main/resources/application.properties` file it is possible to change both
-web interface url path, as well as the datasource url.
+This pipeline ensures a streamlined workflow for building, analyzing, and deploying the Ekart application efficiently and reliably.
